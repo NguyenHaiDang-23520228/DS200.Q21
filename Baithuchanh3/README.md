@@ -84,14 +84,18 @@ hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar RunAll .
 
 Nếu bạn muốn tự chạy từng bước một (để kiểm tra kết quả lẻ):
 
-**Bước 1: Biên dịch dự án thành file `.jar`**
+> **Lưu ý khi copy lệnh từ README:**
+> - Chỉ copy **dòng lệnh bên trong** khối code, **không** copy dòng ` ```bash ` hay ` ``` `.
+> - Đường dẫn ratings phải **bọc trong dấu ngoặc kép** `"input/ratings_*.txt"`. Nếu không, zsh/bash sẽ tách thành 2 file riêng và báo lỗi `Usage: BaiX ...`.
+
+**Bước 1: Di chuyển vào thư mục dự án, biên dịch file `.jar`**
 
 ```bash
 cd Baithuchanh3
 mvn clean package
 ```
 
-**Bước 2: Sử dụng lệnh `hadoop jar` để nạp class tương ứng**
+**Bước 2: Khai báo biến môi trường (chạy một lần trong terminal)**
 
 ```bash
 JAR=target/Baithuchanh3-1.0-SNAPSHOT.jar
@@ -100,40 +104,53 @@ OUTPUT=output
 RATINGS="${INPUT}/ratings_*.txt"
 ```
 
-*Ví dụ chạy Task 1:*
+**Bước 3: Chạy từng task bằng `hadoop jar`**
+
+*Task 1 — Điểm trung bình và tổng lượt đánh giá theo phim:*
 
 ```bash
-hadoop jar $JAR Bai1 $RATINGS $OUTPUT/bai1 $INPUT/movies.txt
+hadoop jar "$JAR" Bai1 "$RATINGS" "$OUTPUT/bai1" "$INPUT/movies.txt"
 ```
 
 *Task 2 — Phân tích theo thể loại:*
 
 ```bash
-hadoop jar $JAR Bai2 $RATINGS $OUTPUT/bai2 $INPUT/movies.txt
+hadoop jar "$JAR" Bai2 "$RATINGS" "$OUTPUT/bai2" "$INPUT/movies.txt"
 ```
 
 *Task 3 — Phân tích theo giới tính:*
 
 ```bash
-hadoop jar $JAR Bai3 $RATINGS $OUTPUT/bai3 $INPUT/users.txt $INPUT/movies.txt
+hadoop jar "$JAR" Bai3 "$RATINGS" "$OUTPUT/bai3" "$INPUT/users.txt" "$INPUT/movies.txt"
 ```
 
 *Task 4 — Phân tích theo nhóm tuổi:*
 
 ```bash
-hadoop jar $JAR Bai4 $RATINGS $OUTPUT/bai4 $INPUT/users.txt $INPUT/movies.txt
+hadoop jar "$JAR" Bai4 "$RATINGS" "$OUTPUT/bai4" "$INPUT/users.txt" "$INPUT/movies.txt"
 ```
 
 *Task 5 — Phân tích theo nghề nghiệp:*
 
 ```bash
-hadoop jar $JAR Bai5 $RATINGS $OUTPUT/bai5 $INPUT/users.txt $INPUT/occupation.txt
+hadoop jar "$JAR" Bai5 "$RATINGS" "$OUTPUT/bai5" "$INPUT/users.txt" "$INPUT/occupation.txt"
 ```
 
 *Task 6 — Phân tích theo năm:*
 
 ```bash
-hadoop jar $JAR Bai6 $RATINGS $OUTPUT/bai6
+hadoop jar "$JAR" Bai6 "$RATINGS" "$OUTPUT/bai6"
+```
+
+**Hoặc chạy trực tiếp không cần biến (copy từng dòng):**
+
+```bash
+hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar Bai1 "input/ratings_*.txt" output/bai1 input/movies.txt
+hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar Bai2 "input/ratings_*.txt" output/bai2 input/movies.txt
+hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar Bai3 "input/ratings_*.txt" output/bai3 input/users.txt input/movies.txt
+hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar Bai4 "input/ratings_*.txt" output/bai4 input/users.txt input/movies.txt
+hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar Bai5 "input/ratings_*.txt" output/bai5 input/users.txt input/occupation.txt
+hadoop jar target/Baithuchanh3-1.0-SNAPSHOT.jar Bai6 "input/ratings_*.txt" output/bai6
 ```
 
 ---
@@ -192,7 +209,8 @@ done
 
 ## Ghi chú kỹ thuật
 
-- Input ratings dùng glob `input/ratings_*.txt` để đọc cả `ratings_1.txt` và `ratings_2.txt`.
+- Chạy ở chế độ **local** (không cần Hadoop cluster).
+- Input ratings dùng glob `"input/ratings_*.txt"` (có dấu ngoặc kép) để Hadoop đọc cả `ratings_1.txt` và `ratings_2.txt` trong **một** tham số. Không dùng `input/ratings_*.txt` không quote — zsh sẽ expand thành 2 file và gây lỗi `Usage: BaiX ...`.
 - Trước mỗi lần chạy, thư mục output tương ứng sẽ được xóa tự động nếu đã tồn tại.
 - Parse `movies.txt` bằng `indexOf` / `lastIndexOf` vì Title có thể chứa dấu phẩy.
 
