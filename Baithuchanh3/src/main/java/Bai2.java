@@ -1,9 +1,13 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -43,7 +47,7 @@ public class Bai2 {
     }
 
     public static class GenreReducer extends Reducer<Text, DoubleWritable, NullWritable, Text> {
-        private Map<String, String> movieGenresMap = new HashMap<>();
+        private final Map<String, String> movieGenresMap = new HashMap<>();
         private final Map<String, Double> genreSum = new HashMap<>();
         private final Map<String, Integer> genreCount = new HashMap<>();
 
@@ -54,7 +58,30 @@ public class Bai2 {
             if (moviesPath == null || moviesPath.isEmpty()) {
                 throw new IOException("Thieu tham so movies.path");
             }
-            movieGenresMap = JobUtils.loadMovieGenres(moviesPath, conf);
+
+            Path path = new Path(moviesPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    int firstComma = line.indexOf(',');
+                    int lastComma = line.lastIndexOf(',');
+                    if (firstComma <= 0 || lastComma <= firstComma) {
+                        continue;
+                    }
+
+                    String movieId = line.substring(0, firstComma).trim();
+                    String genres = line.substring(lastComma + 1).trim();
+                    movieGenresMap.put(movieId, genres);
+                }
+            }
         }
 
         @Override
@@ -109,7 +136,12 @@ public class Bai2 {
 
         Configuration conf = new Configuration();
         conf.set("movies.path", args[2]);
-        JobUtils.deleteOutputPath(conf, args[1]);
+
+        Path outputPath = new Path(args[1]);
+        FileSystem fs = outputPath.getFileSystem(conf);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
         Job job = Job.getInstance(conf, "Bai2 - Genre Average Rating");
         job.setJarByClass(Bai2.class);
@@ -124,7 +156,7 @@ public class Bai2 {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, outputPath);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

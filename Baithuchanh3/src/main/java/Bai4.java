@@ -1,9 +1,14 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -49,8 +54,8 @@ public class Bai4 {
     }
 
     public static class AgeGroupReducer extends Reducer<Text, Text, NullWritable, Text> {
-        private Map<String, Integer> userAgeMap;
-        private Map<String, String> movieTitleMap;
+        private final Map<String, Integer> userAgeMap = new HashMap<>();
+        private final Map<String, String> movieTitleMap = new HashMap<>();
 
         @Override
         protected void setup(Context context) throws IOException {
@@ -65,8 +70,73 @@ public class Bai4 {
                 throw new IOException("Thieu tham so movies.path");
             }
 
-            userAgeMap = JobUtils.loadUserAge(usersPath, conf);
-            movieTitleMap = JobUtils.loadMovieTitles(moviesPath, conf);
+            loadUsers(usersPath, conf);
+            loadMovies(moviesPath, conf);
+        }
+
+        private void loadUsers(String usersPath, Configuration conf) throws IOException {
+            Path path = new Path(usersPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    String[] parts = line.split(",");
+                    if (parts.length < 3) {
+                        continue;
+                    }
+
+                    try {
+                        userAgeMap.put(parts[0].trim(), Integer.parseInt(parts[2].trim()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        }
+
+        private void loadMovies(String moviesPath, Configuration conf) throws IOException {
+            Path path = new Path(moviesPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    int firstComma = line.indexOf(',');
+                    int lastComma = line.lastIndexOf(',');
+                    if (firstComma <= 0 || lastComma <= firstComma) {
+                        continue;
+                    }
+
+                    String movieId = line.substring(0, firstComma).trim();
+                    String title = line.substring(firstComma + 1, lastComma).trim();
+                    movieTitleMap.put(movieId, title);
+                }
+            }
+        }
+
+        private String ageGroup(int age) {
+            if (age < 18) {
+                return "0-18";
+            }
+            if (age < 35) {
+                return "18-35";
+            }
+            if (age < 50) {
+                return "35-50";
+            }
+            return "50+";
         }
 
         @Override
@@ -101,7 +171,7 @@ public class Bai4 {
                     continue;
                 }
 
-                String group = JobUtils.ageGroup(age);
+                String group = ageGroup(age);
                 sumMap.put(group, sumMap.get(group) + rating);
                 countMap.put(group, countMap.get(group) + 1);
             }
@@ -131,7 +201,12 @@ public class Bai4 {
         Configuration conf = new Configuration();
         conf.set("users.path", args[2]);
         conf.set("movies.path", args[3]);
-        JobUtils.deleteOutputPath(conf, args[1]);
+
+        Path outputPath = new Path(args[1]);
+        FileSystem fs = outputPath.getFileSystem(conf);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
         Job job = Job.getInstance(conf, "Bai4 - Rating by Age Group");
         job.setJarByClass(Bai4.class);
@@ -145,7 +220,7 @@ public class Bai4 {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, outputPath);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

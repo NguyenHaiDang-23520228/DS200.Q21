@@ -21,7 +21,6 @@ Baithuchanh3/
 ├── README.md                        # Tài liệu hướng dẫn
 ├── assignments.ipynb                # File yêu cầu bài tập (Jupyter Notebook) gốc
 ├── src/main/java/                   # Mã nguồn Java (chia theo từng Task)
-│   ├── JobUtils.java                # Hàm tiện ích dùng chung
 │   ├── Bai1.java                    # Task 1: Tính điểm đánh giá trung bình mỗi bộ phim và tìm phim Top 1
 │   ├── Bai2.java                    # Task 2: Phân tích đánh giá theo Thể loại (Genre)
 │   ├── Bai3.java                    # Task 3: Phân tích đánh giá theo Giới tính (Gender) cho mỗi phim

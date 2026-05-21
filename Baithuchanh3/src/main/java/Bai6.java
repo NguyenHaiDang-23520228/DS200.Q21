@@ -5,6 +5,7 @@ import java.time.ZonedDateTime;
 import java.util.Locale;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -83,7 +84,12 @@ public class Bai6 {
         }
 
         Configuration conf = new Configuration();
-        JobUtils.deleteOutputPath(conf, args[1]);
+
+        Path outputPath = new Path(args[1]);
+        FileSystem fs = outputPath.getFileSystem(conf);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
         Job job = Job.getInstance(conf, "Bai6 - Rating by Year");
         job.setJarByClass(Bai6.class);
@@ -97,7 +103,7 @@ public class Bai6 {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, outputPath);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

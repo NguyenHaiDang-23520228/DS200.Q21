@@ -1,8 +1,13 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -44,7 +49,7 @@ public class Bai1 {
     }
 
     public static class RatingReducer extends Reducer<Text, DoubleWritable, NullWritable, Text> {
-        private Map<String, String> movieMap;
+        private final Map<String, String> movieMap = new HashMap<>();
         private String maxMovie = null;
         private double maxRating = -1.0;
 
@@ -55,7 +60,30 @@ public class Bai1 {
             if (moviesPath == null || moviesPath.isEmpty()) {
                 throw new IOException("Thieu tham so movies.path");
             }
-            movieMap = JobUtils.loadMovieTitles(moviesPath, conf);
+
+            Path path = new Path(moviesPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    int firstComma = line.indexOf(',');
+                    int lastComma = line.lastIndexOf(',');
+                    if (firstComma <= 0 || lastComma <= firstComma) {
+                        continue;
+                    }
+
+                    String id = line.substring(0, firstComma).trim();
+                    String title = line.substring(firstComma + 1, lastComma).trim();
+                    movieMap.put(id, title);
+                }
+            }
         }
 
         @Override
@@ -116,7 +144,12 @@ public class Bai1 {
 
         Configuration conf = new Configuration();
         conf.set("movies.path", args[2]);
-        JobUtils.deleteOutputPath(conf, args[1]);
+
+        Path outputPath = new Path(args[1]);
+        FileSystem fs = outputPath.getFileSystem(conf);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
         Job job = Job.getInstance(conf, "Bai1 - Movie Average Rating");
         job.setJarByClass(Bai1.class);
@@ -130,7 +163,7 @@ public class Bai1 {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, outputPath);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

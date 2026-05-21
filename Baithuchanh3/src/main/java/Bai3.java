@@ -1,8 +1,13 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -48,8 +53,8 @@ public class Bai3 {
     }
 
     public static class GenderReducer extends Reducer<Text, Text, NullWritable, Text> {
-        private Map<String, String> userGenderMap;
-        private Map<String, String> movieTitleMap;
+        private final Map<String, String> userGenderMap = new HashMap<>();
+        private final Map<String, String> movieTitleMap = new HashMap<>();
 
         @Override
         protected void setup(Context context) throws IOException {
@@ -64,8 +69,57 @@ public class Bai3 {
                 throw new IOException("Thieu tham so movies.path");
             }
 
-            userGenderMap = JobUtils.loadUserGender(usersPath, conf);
-            movieTitleMap = JobUtils.loadMovieTitles(moviesPath, conf);
+            loadUsers(usersPath, conf);
+            loadMovies(moviesPath, conf);
+        }
+
+        private void loadUsers(String usersPath, Configuration conf) throws IOException {
+            Path path = new Path(usersPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    String[] parts = line.split(",");
+                    if (parts.length < 2) {
+                        continue;
+                    }
+
+                    userGenderMap.put(parts[0].trim(), parts[1].trim().toUpperCase(Locale.US));
+                }
+            }
+        }
+
+        private void loadMovies(String moviesPath, Configuration conf) throws IOException {
+            Path path = new Path(moviesPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    int firstComma = line.indexOf(',');
+                    int lastComma = line.lastIndexOf(',');
+                    if (firstComma <= 0 || lastComma <= firstComma) {
+                        continue;
+                    }
+
+                    String movieId = line.substring(0, firstComma).trim();
+                    String title = line.substring(firstComma + 1, lastComma).trim();
+                    movieTitleMap.put(movieId, title);
+                }
+            }
         }
 
         @Override
@@ -126,7 +180,12 @@ public class Bai3 {
         Configuration conf = new Configuration();
         conf.set("users.path", args[2]);
         conf.set("movies.path", args[3]);
-        JobUtils.deleteOutputPath(conf, args[1]);
+
+        Path outputPath = new Path(args[1]);
+        FileSystem fs = outputPath.getFileSystem(conf);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
         Job job = Job.getInstance(conf, "Bai3 - Rating by Gender");
         job.setJarByClass(Bai3.class);
@@ -140,7 +199,7 @@ public class Bai3 {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, outputPath);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }

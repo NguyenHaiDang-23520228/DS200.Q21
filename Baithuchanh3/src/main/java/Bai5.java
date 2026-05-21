@@ -1,8 +1,13 @@
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -16,7 +21,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 public class Bai5 {
 
     public static class OccupationMapper extends Mapper<LongWritable, Text, Text, Text> {
-        private Map<String, String> userOccupationMap;
+        private final Map<String, String> userOccupationMap = new HashMap<>();
         private final Text outKey = new Text();
         private final Text outValue = new Text();
 
@@ -27,7 +32,27 @@ public class Bai5 {
             if (usersPath == null || usersPath.isEmpty()) {
                 throw new IOException("Thieu tham so users.path");
             }
-            userOccupationMap = JobUtils.loadUserOccupation(usersPath, conf);
+
+            Path path = new Path(usersPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    String[] parts = line.split(",");
+                    if (parts.length < 4) {
+                        continue;
+                    }
+
+                    userOccupationMap.put(parts[0].trim(), parts[3].trim());
+                }
+            }
         }
 
         @Override
@@ -59,7 +84,7 @@ public class Bai5 {
     }
 
     public static class OccupationReducer extends Reducer<Text, Text, NullWritable, Text> {
-        private Map<String, String> occupationNameMap;
+        private final Map<String, String> occupationNameMap = new HashMap<>();
 
         @Override
         protected void setup(Context context) throws IOException {
@@ -68,7 +93,27 @@ public class Bai5 {
             if (occupationPath == null || occupationPath.isEmpty()) {
                 throw new IOException("Thieu tham so occupation.path");
             }
-            occupationNameMap = JobUtils.loadOccupationNames(occupationPath, conf);
+
+            Path path = new Path(occupationPath);
+            FileSystem fs = path.getFileSystem(conf);
+
+            try (FSDataInputStream in = fs.open(path);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
+                    }
+
+                    String[] parts = line.split(",");
+                    if (parts.length < 2) {
+                        continue;
+                    }
+
+                    occupationNameMap.put(parts[0].trim(), parts[1].trim());
+                }
+            }
         }
 
         @Override
@@ -115,7 +160,12 @@ public class Bai5 {
         Configuration conf = new Configuration();
         conf.set("users.path", args[2]);
         conf.set("occupation.path", args[3]);
-        JobUtils.deleteOutputPath(conf, args[1]);
+
+        Path outputPath = new Path(args[1]);
+        FileSystem fs = outputPath.getFileSystem(conf);
+        if (fs.exists(outputPath)) {
+            fs.delete(outputPath, true);
+        }
 
         Job job = Job.getInstance(conf, "Bai5 - Rating by Occupation");
         job.setJarByClass(Bai5.class);
@@ -129,7 +179,7 @@ public class Bai5 {
         job.setOutputValueClass(Text.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+        FileOutputFormat.setOutputPath(job, outputPath);
 
         return job.waitForCompletion(true) ? 0 : 1;
     }
