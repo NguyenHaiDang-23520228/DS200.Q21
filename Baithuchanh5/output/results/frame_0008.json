@@ -1,8 +1,8 @@
 {
   "type": "detection_result",
   "frame_id": 8,
-  "source_timestamp": "2026-06-18T01:01:29.412798",
-  "processed_at": "2026-06-18T01:01:29.421242",
+  "source_timestamp": "2026-06-18T01:10:07.945071",
+  "processed_at": "2026-06-18T01:10:07.955783",
   "person_count": 2,
   "bounding_boxes": [
     {
@@ -20,6 +20,6 @@
   ],
   "image_width": 640,
   "image_height": 480,
-  "processing_time_ms": 7,
-  "stored_at": "2026-06-18T01:01:29.421554"
+  "processing_time_ms": 10,
+  "stored_at": "2026-06-18T01:10:07.956184"
 }

@@ -19,6 +19,7 @@ class PersonDetector:
         if image is None or image.size == 0:
             return 0, []
 
+        scale = 1.0
         resized = image
         if max(image.shape[:2]) > 800:
             scale = 800 / max(image.shape[:2])
@@ -32,12 +33,13 @@ class PersonDetector:
         )
 
         boxes = []
+        inv_scale = 1.0 / scale
         for x, y, w, h in rects:
             boxes.append({
-                "x": int(x),
-                "y": int(y),
-                "width": int(w),
-                "height": int(h),
+                "x": int(x * inv_scale),
+                "y": int(y * inv_scale),
+                "width": int(w * inv_scale),
+                "height": int(h * inv_scale),
             })
 
         return len(boxes), boxes

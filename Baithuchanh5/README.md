@@ -123,6 +123,77 @@ python3 analyze_results.py
 
 ---
 
+## Demo realtime + bounding box (chứng minh hệ thống hoạt động)
+
+### Cách A — Video có người + cửa sổ preview (khuyến nghị chụp màn hình)
+
+Mở **3 terminal**:
+
+```bash
+# Terminal 1
+python3 storage_server.py
+
+# Terminal 2
+python3 processing_server.py
+
+# Terminal 3 — dùng video của bạn hoặc sample.mp4
+python3 camera_server.py --source video --video input/sample.mp4 --show --max-frames 10
+```
+
+Hoặc chạy nhanh:
+```bash
+chmod +x run_demo.sh
+./run_demo.sh
+```
+
+Kết quả:
+- Cửa sổ **Real-time People Counting** hiện khung xanh (bounding box)
+- Ảnh có box lưu tại `output/annotated/frame_XXXX.jpg`
+- JSON lưu tại `output/results/frame_XXXX.json`
+
+Tạo lại ảnh có box từ JSON:
+```bash
+python3 visualize_results.py
+```
+
+### Cách B — Webcam realtime (chạy thật trước lớp)
+
+```bash
+python3 camera_server.py --source webcam --realtime --show
+```
+
+Nhấn **Q** để dừng.
+
+### Cách C — Dùng video tự quay / tải về
+
+1. Copy video vào `input/my_video.mp4`
+2. Chạy:
+```bash
+python3 camera_server.py --source video --video input/my_video.mp4 --show --realtime
+```
+
+> Video có **người đi lại** sẽ detect tốt hơn `sample.mp4` (video mẫu chỉ có hình vẽ).
+
+---
+
+## Làm sao chứng minh đây là 3 server thật?
+
+| Cách chứng minh | Làm gì | Chụp gì |
+|-----------------|--------|---------|
+| **3 process riêng** | Mở 3 terminal, mỗi cái chạy 1 server | Screenshot 3 terminal cùng lúc |
+| **Port TCP** | `lsof -i :6100` và `lsof -i :6200` | Thấy process Python listen port |
+| **Kill test** | Tắt Processing Server, chạy Camera → báo `Connection refused` | Chứng minh Camera phụ thuộc server xử lý |
+| **Log từng tầng** | `[Camera] Sent` → `[Processing] person_count` → `[Storage] Saved` | Screenshot chuỗi log |
+| **JSON + bounding box** | `frame_0001.json` có `bounding_boxes` + ảnh `output/annotated/` | Chứng minh pipeline xử lý có kết quả |
+
+Ví dụ kiểm tra port:
+```bash
+lsof -i :6100   # Processing server
+lsof -i :6200   # Storage server
+```
+
+---
+
 ## Xem kết quả
 
 ```bash

@@ -9,6 +9,7 @@ class Config:
 
     # Output directory for detection results
     results_dir = "output/results"
+    annotated_dir = "output/annotated"
 
     # Camera settings
     camera_index = 0
@@ -16,3 +17,7 @@ class Config:
     frame_interval_sec = 0.5
     input_video = "input/sample.mp4"
     input_image_dir = "input/frames"
+
+    # Real-time demo
+    show_window = False
+    realtime = False
