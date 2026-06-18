@@ -1,31 +1,25 @@
 {
   "type": "detection_result",
   "frame_id": 2,
-  "source_timestamp": "2026-06-18T01:10:07.776013",
-  "processed_at": "2026-06-18T01:10:07.789592",
-  "person_count": 3,
+  "source_timestamp": "2026-06-18T14:56:43.686648",
+  "processed_at": "2026-06-18T14:56:43.723185",
+  "person_count": 2,
   "bounding_boxes": [
     {
-      "x": 73,
-      "y": 24,
-      "width": 84,
-      "height": 168
+      "x": 945,
+      "y": 271,
+      "width": 230,
+      "height": 460
     },
     {
-      "x": 170,
-      "y": 20,
-      "width": 98,
-      "height": 196
-    },
-    {
-      "x": 309,
-      "y": 16,
-      "width": 107,
-      "height": 214
+      "x": 1219,
+      "y": 228,
+      "width": 175,
+      "height": 350
     }
   ],
-  "image_width": 640,
-  "image_height": 480,
-  "processing_time_ms": 12,
-  "stored_at": "2026-06-18T01:10:07.790097"
+  "image_width": 1920,
+  "image_height": 1080,
+  "processing_time_ms": 24,
+  "stored_at": "2026-06-18T14:56:43.723670"
 }

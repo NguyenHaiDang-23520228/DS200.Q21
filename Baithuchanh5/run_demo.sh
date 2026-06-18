@@ -11,9 +11,7 @@ fi
 
 mkdir -p output/results output/annotated logs
 rm -f output/results/detections.ndjson output/results/summary.json output/results/frame_*.json
-
-echo "Preparing sample input..."
-"$PYTHON" prepare_input.py
+rm -f output/annotated/frame_*.jpg
 
 echo "Starting storage server..."
 "$PYTHON" storage_server.py > logs/storage.log 2>&1 &
@@ -26,7 +24,7 @@ PROCESSING_PID=$!
 sleep 1
 
 echo "Starting camera server with preview..."
-"$PYTHON" camera_server.py --source video --show --max-frames 10 | tee logs/camera.log
+"$PYTHON" camera_server.py --source video --video walkingstreet.mp4 --show --start-frame 1100 --max-frames 30 | tee logs/camera.log
 
 echo "Generating annotated images..."
 "$PYTHON" visualize_results.py

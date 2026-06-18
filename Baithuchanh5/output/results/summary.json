@@ -1,7 +1,7 @@
 {
-  "total_frames": 10,
-  "total_persons_detected": 21,
-  "average_person_count": 2.1,
-  "max_person_count": 3,
-  "updated_at": "2026-06-18T01:10:08.005347"
+  "total_frames": 30,
+  "total_persons_detected": 80,
+  "average_person_count": 2.6666666666666665,
+  "max_person_count": 4,
+  "updated_at": "2026-06-18T14:56:59.574211"
 }

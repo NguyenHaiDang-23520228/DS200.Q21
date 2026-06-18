@@ -15,7 +15,7 @@ class Config:
     camera_index = 0
     max_frames = 10
     frame_interval_sec = 0.5
-    input_video = "input/sample.mp4"
+    input_video = "walkingstreet.mp4"
     input_image_dir = "input/frames"
 
     # Real-time demo

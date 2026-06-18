@@ -80,13 +80,16 @@ def iter_webcam_frames(max_frames: int, realtime: bool):
     capture.release()
 
 
-def iter_video_frames(max_frames: int, realtime: bool, video_path: str):
+def iter_video_frames(max_frames: int, realtime: bool, video_path: str, start_frame: int = 0):
     if not os.path.exists(video_path):
         return
 
     capture = cv2.VideoCapture(video_path)
     if not capture.isOpened():
         return
+
+    if start_frame > 0:
+        capture.set(cv2.CAP_PROP_POS_FRAMES, start_frame)
 
     frame_id = 1
     while realtime or frame_id <= max_frames:
@@ -151,32 +154,37 @@ def iter_synthetic_frames(max_frames: int):
         time.sleep(Config.frame_interval_sec)
 
 
-def frame_source(source: str, max_frames: int, realtime: bool, video_path: str):
+def frame_source(source: str, max_frames: int, realtime: bool, video_path: str, start_frame: int = 0):
     if source == "webcam":
-        frames = list(iter_webcam_frames(max_frames, realtime))
-        if frames:
-            print(f"[Camera] Using webcam ({len(frames)} frames)")
+        frames = iter_webcam_frames(max_frames, realtime)
+        first = next(frames, None)
+        if first is not None:
+            print("[Camera] Using webcam")
+            yield first
             yield from frames
             return
 
     if source in ("video", "auto"):
-        frames = list(iter_video_frames(max_frames, realtime, video_path))
-        if frames:
-            print(f"[Camera] Using video: {video_path} ({len(frames)} frames)")
-            yield from frames
+        if os.path.exists(video_path):
+            print(f"[Camera] Using video: {video_path} (from frame {start_frame + 1})")
+            yield from iter_video_frames(max_frames, realtime, video_path, start_frame)
             return
 
     if source in ("images", "auto"):
-        frames = list(iter_image_frames(max_frames))
-        if frames:
-            print(f"[Camera] Using images ({len(frames)} frames)")
+        frames = iter_image_frames(max_frames)
+        first = next(frames, None)
+        if first is not None:
+            print("[Camera] Using images from input/frames/")
+            yield first
             yield from frames
             return
 
     if source == "webcam" or source == "auto":
-        frames = list(iter_webcam_frames(max_frames, realtime))
-        if frames:
-            print(f"[Camera] Using webcam ({len(frames)} frames)")
+        frames = iter_webcam_frames(max_frames, realtime)
+        first = next(frames, None)
+        if first is not None:
+            print("[Camera] Using webcam")
+            yield first
             yield from frames
             return
 
@@ -208,6 +216,12 @@ def parse_args():
         help="Show preview window with bounding boxes returned by processing server",
     )
     parser.add_argument(
+        "--start-frame",
+        type=int,
+        default=0,
+        help="Skip to this frame index before streaming (0-based)",
+    )
+    parser.add_argument(
         "--max-frames",
         type=int,
         default=Config.max_frames,
@@ -234,6 +248,7 @@ def main() -> None:
             args.max_frames,
             args.realtime,
             args.video,
+            args.start_frame,
         ):
             payload = build_frame_payload(frame_id, image)
             send_json(connection, payload)

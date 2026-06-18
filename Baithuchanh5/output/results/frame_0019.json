@@ -1,0 +1,25 @@
+{
+  "type": "detection_result",
+  "frame_id": 19,
+  "source_timestamp": "2026-06-18T14:56:53.304926",
+  "processed_at": "2026-06-18T14:56:53.344025",
+  "person_count": 2,
+  "bounding_boxes": [
+    {
+      "x": 1022,
+      "y": 252,
+      "width": 201,
+      "height": 400
+    },
+    {
+      "x": 1245,
+      "y": 218,
+      "width": 168,
+      "height": 333
+    }
+  ],
+  "image_width": 1920,
+  "image_height": 1080,
+  "processing_time_ms": 23,
+  "stored_at": "2026-06-18T14:56:53.344526"
+}
